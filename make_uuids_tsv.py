@@ -1,50 +1,32 @@
 #!/usr/bin/env python3
-import json
 from argparse import ArgumentParser
 
 import pandas as pd
 import requests
 import yaml
+import json
 
 organ_types_yaml_file = "bin/organ_types.yaml"
+organ_uberon_file = "bin/organs.json"
 
 
-def get_uuids(organ_name_mapping: dict, organ: str):
-    organ_code_mapping = {organ_name_mapping[key]: key for key in organ_name_mapping}
-
-    must_conditions = [
-        {"match": {"dataset_type": "10X Multiome"}},
-        {"match": {"data_access_level": "public"}},
-    ]
-
-    if organ:
-        must_conditions.append({"match": {"origin_samples.organ": organ_code_mapping[organ]}})
-
-    query_payload = {
-        "from": 0,
-        "size": 10000,
-        "query": {
-            "bool": {
-                "must": must_conditions,
-                "must_not": [
-                    {
-                        "exists": {
-                            "field": "next_revision_uuid"
-                        }
-                    }
-                ]
-            }
-        }
+def get_uuids(organ_uberon: str, organism: str):
+    params = {
+        "status": "Published",
+        "dataset_type": "10X Multiome",
     }
 
-    # Make the request
-    url = "https://search.api.hubmapconsortium.org/v3/search"
-    response = requests.post(url, json=query_payload)
+    if organ_uberon:
+        params["origin_samples.organ"] = organ_uberon
+
+    url = "https://search.api.sennetconsortium.org/param-search/datasets"
+    response = requests.get(url, params=params)
+    print("Request URL:", response.url)
     print("Response status code: ", response.status_code)
 
     # Handle a successful response
     if response.status_code == 200:
-        return process_response(response)
+        return process_response(response, organism)
 
     # Handle 303 redirection
     elif response.status_code == 303:
@@ -56,7 +38,7 @@ def get_uuids(organ_name_mapping: dict, organ: str):
         # Make a request to the redirection URL
         redirection_response = requests.get(redirection_url)
         if redirection_response.status_code == 200:
-            return process_response(redirection_response)
+            return process_response(redirection_response, organism)
 
     # Handle other error responses
     else:
@@ -64,34 +46,31 @@ def get_uuids(organ_name_mapping: dict, organ: str):
         return [], [], []
 
 
-def process_response(response):
-    """
-    Helper function to process the JSON response and extract UUIDs, HubMAP IDs, and donor metadata.
-    """
+def process_response(response, organism):
     data = response.json()
-    hits = data.get("hits", {}).get("hits", [])
+    items = data
 
     uuids = []
-    hubmap_ids = []
+    sennet_ids = []
     donor_metadata_list = []
 
-    # Loop through each dataset (hit) and extract the relevant information
-    for hit in hits:
-        source = hit["_source"]
-        uuids.append(source["uuid"])
-        hubmap_ids.append(source["hubmap_id"])
+    for item in items:
+        sources = item.get("sources", [])
+        if not sources:
+            continue
+        source = sources[0]
+        if source.get("source_type").lower() == organism.lower():
+            uuids.append(item.get("uuid"))
+            sennet_ids.append(item.get("sennet_id"))
 
-        # Attempt to extract donor metadata, if available
-        donor_metadata = source.get("donor", {}).get("metadata", {})
-        donor_metadata_list.append(extract_donor_metadata(donor_metadata))
+            # Attempt to extract donor metadata
+            metadata = item.get("sources")[0]
+            donor_metadata_list.append(extract_donor_metadata(metadata))
 
-    return uuids, hubmap_ids, donor_metadata_list
+    return uuids, sennet_ids, donor_metadata_list
 
 
 def extract_donor_metadata(metadata):
-    """
-    Extract donor metadata, including age, sex, height, weight, and other relevant information.
-    """
     donor_info = {
         "age": None,
         "sex": None,
@@ -100,59 +79,61 @@ def extract_donor_metadata(metadata):
         "bmi": None,
         "cause_of_death": None,
         "race": None,
+        "social_history": None,
+        "abo_blood_type": None,
+        "mechanism_of_injury": None,
     }
 
-    for item in metadata.get("organ_donor_data", []):
-        concept = item.get("grouping_concept_preferred_term")
-        value = item.get("data_value")
+    donor_metadata = metadata.get("mapped_metadata", {})
 
-        if concept == "Age":
-            donor_info["age"] = value
-        elif concept == "Sex":
-            donor_info["sex"] = item.get("preferred_term")
-        elif concept == "Height":
-            donor_info["height"] = value
-        elif concept == "Weight":
-            donor_info["weight"] = value
-        elif concept == "Body mass index":
-            donor_info["bmi"] = value
-        elif concept == "Cause of death":
-            donor_info["cause_of_death"] = item.get("preferred_term")
-        elif concept == "Race":
-            donor_info["race"] = item.get("preferred_term")
-
-    for item in metadata.get("living_donor_data", []):
-        concept = item.get("grouping_concept_preferred_term")
-        value = item.get("data_value")
-        if concept == "Age":
-            donor_info["age"] = value
-        elif concept == "Sex":
-            donor_info["sex"] = item.get("preferred_term")
-        elif concept == "Height":
-            donor_info["height"] = value
-        elif concept == "Weight":
-            donor_info["weight"] = value
-        elif concept == "Body mass index":
-            donor_info["bmi"] = value
-        elif concept == "Cause of death":
-            donor_info["cause_of_death"] = item.get("preferred_term")
-        elif concept == "Race":
-            donor_info["race"] = item.get("preferred_term")
+    for key in donor_metadata:
+        if key == "abo_blood_group_system":
+            donor_info["abo_blood_type"] = donor_metadata[key].get("value_display")
+        elif key == "age":
+            donor_info["age"] = donor_metadata[key].get("value_display")
+        elif key == "body_mass_index":
+            donor_info["bmi"] = donor_metadata[key].get("value_display")
+        elif key == "cause_of_death":
+            donor_info["cause_of_death"] = donor_metadata[key].get("value_display")
+        elif key == "height":
+            donor_info["height"] = donor_metadata[key].get("value_display")
+        elif key == "mechanism_of_injury":
+            donor_info["mechanism_of_injury"] = donor_metadata[key].get("value_display")
+        elif key == "race":
+            donor_info["race"] = donor_metadata[key].get("value_display")
+        elif key == "sex":
+            donor_info["sex"] = donor_metadata[key].get("value_display")
+        elif key == "social_history":
+            donor_info["social_history"] = donor_metadata[key].get("value_display")
+        elif key == "weight":
+            donor_info["weight"] = donor_metadata[key].get("value_display")
 
     return donor_info
 
 
-def main(tissue_type: str):
+def get_organ_uberon(organ_name):
+    term = organ_name.lower().strip()
+    with open(organ_uberon_file) as f:
+        data = json.load(f)
+    for entry in data:
+        if entry.get("term", "").lower() == term:
+            return entry["organ_uberon"]
+    for entry in data:
+        cat = entry.get("category")
+        if cat and cat.get("term", "").lower() == term:
+            return cat["organ_uberon"]
+    return None
+
+
+def main(tissue_type: str, organism:str):
     organ_dict = yaml.load(open(organ_types_yaml_file), Loader=yaml.BaseLoader)
     for key in organ_dict:
         organ_dict[key] = organ_dict[key]["description"]
-    if tissue_type not in organ_dict.values():
-        print(f"Tissue {tissue_type} not found ")
-        tissue_type = None
-    uuids_list, hubmap_ids_list, donor_metadata = get_uuids(organ_dict, tissue_type)
+    uberon_code = get_organ_uberon(tissue_type)
+    uuids_list, sennet_ids_list, donor_metadata = get_uuids(uberon_code, organism)
     uuids_df = pd.DataFrame()
     uuids_df["uuid"] = pd.Series(uuids_list, dtype=str)
-    uuids_df["hubmap_id"] = pd.Series(hubmap_ids_list, dtype=str)
+    uuids_df["sennet_id"] = pd.Series(sennet_ids_list, dtype=str)
     donor_metadata_df = pd.DataFrame(donor_metadata)
     result_df = pd.concat([uuids_df, donor_metadata_df], axis=1)
     key_for_tissue = [key for key, value in organ_dict.items() if value == tissue_type]
@@ -160,6 +141,8 @@ def main(tissue_type: str):
         output_file_name = f"{key_for_tissue[0].lower()}.tsv"
     else:
         output_file_name = "rna.tsv"
+    result_df['organism'] = organism
+    result_df['tissue'] = tissue_type
     print(result_df)
     result_df.to_csv(output_file_name, sep="\t")
 
@@ -167,6 +150,7 @@ def main(tissue_type: str):
 if __name__ == "__main__":
     p = ArgumentParser()
     p.add_argument("tissue_type", type=str, nargs="?", help="Type of tissue (optional)")
+    p.add_argument("organism", type=str)
     args = p.parse_args()
 
-    main(args.tissue_type)
+    main(args.tissue_type, args.organism)
