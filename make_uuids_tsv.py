@@ -13,7 +13,7 @@ organ_uberon_file = "bin/organs.json"
 def get_uuids(organ_uberon: str, organism: str):
     params = {
         "status": "Published",
-        "dataset_type": "10X Multiome",
+        "dataset_type": "10x Multiome [Salmon + ArchR + Muon]",
     }
 
     if organ_uberon:
