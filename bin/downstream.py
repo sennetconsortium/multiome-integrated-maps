@@ -143,7 +143,7 @@ def main(mudata_raw: Path, tissue: str, metadata: Path):
     print(mdata_raw_copy.obs_keys())
     for column in original_obs.columns:
         mdata_raw_copy.obs[column] = original_obs[column]
-    columns_to_keep = ['hubmap_id', 'age', 'sex', 'height', 'weight', 'bmi', 'cause_of_death', 'race', 'barcode', 'dataset', 'cell_id', 'num_genes_rna', 'leiden_wnn', "tissue"]
+    columns_to_keep = ['sennet_id', 'organism', 'age', 'sex', 'height', 'weight', 'bmi', 'cause_of_death', 'race', 'barcode', 'dataset', 'cell_id', 'num_genes_rna', 'leiden_wnn', "tissue"]
     mdata_raw_copy.obs = mdata_raw_copy.obs[columns_to_keep]
     mdata_raw_copy.obs["cell_id"] = mdata_raw_copy.obs["cell_id"].astype(str)
     mdata_raw_copy.var["highly_variable"] = mdata_raw_copy.var["highly_variable"].astype(bool)

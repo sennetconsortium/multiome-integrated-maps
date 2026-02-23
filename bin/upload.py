@@ -12,7 +12,7 @@ def set_access_keys(access_key_id, secret_access_key):
 
 
 def upload_file_to_s3(local_file, uuid):
-    bucket_path = f"s3://hubmap-data-products/{uuid}/"
+    bucket_path = f"s3://sn-data-products/{uuid}/"
     file_size = os.path.getsize(local_file)
     os.system(f"aws s3 cp \"{local_file}\" \"{bucket_path}{local_file.name}\" --expected-size \"{file_size}\"")
 

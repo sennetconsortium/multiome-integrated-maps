@@ -3,7 +3,7 @@ class: CommandLineTool
 label: Downstream analysis for RNA and ATAC 
 requirements:
   DockerRequirement:
-      dockerPull: hubmap/multi-data-products:latest
+      dockerPull: sennet/multi-data-products:latest
 baseCommand: /opt/downstream.py
 
 inputs:

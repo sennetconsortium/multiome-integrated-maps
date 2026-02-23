@@ -19,13 +19,14 @@ import uuid
 import yaml
 
 
-def get_tissue_type(dataset: str) -> str:
-    organ_dict = yaml.load(open("/opt/organ_types.yaml"), Loader=yaml.BaseLoader)
-    organ_code = requests.get(
-        f"https://entity.api.hubmapconsortium.org/dataset/{dataset}/organs/"
-    )
-    organ_name = organ_dict[organ_code]
-    return organ_name.replace(" (Left)", "").replace(" (Right)", "")
+# !!TODO!! change to sennet
+# def get_tissue_type(dataset: str) -> str:
+#     organ_dict = yaml.load(open("/opt/organ_types.yaml"), Loader=yaml.BaseLoader)
+#     organ_code = requests.get(
+#         f"https://entity.api.hubmapconsortium.org/dataset/{dataset}/organs/"
+#     )
+#     organ_name = organ_dict[organ_code]
+#     return organ_name.replace(" (Left)", "").replace(" (Right)", "")
 
 
 def convert_tissue_code(tissue_code):
@@ -55,7 +56,7 @@ def find_file_pairs(directory):
 
 def make_unique_barcodes(mdata_file, tissue_type: str = None):
     data_set_dir = fspath(mdata_file.parent.stem)
-    tissue_type = tissue_type if tissue_type else get_tissue_type(data_set_dir)
+    tissue_type = tissue_type # if tissue_type else get_tissue_type(data_set_dir)
     
     # Load MuData object
     mdata = mu.read_h5mu(mdata_file)
@@ -127,16 +128,17 @@ def concat_mudatas(concatenated_anndata_dict, mudata_obs):
     return new_mudata
 
 
-def create_json(tissue, data_product_uuid, creation_time, uuids, hbmids, cell_count, file_size):
-    bucket_url = f"https://hubmap-data-products.s3.amazonaws.com/{data_product_uuid}/"
+def create_json(tissue, data_product_uuid, creation_time, uuids, sntids, cell_count, file_size, organism):
+    bucket_url = f"https://sn-data-products.s3.amazonaws.com/{data_product_uuid}/"
     metadata = {
-        "Data Product UUID": data_product_uuid,
+        "Integrated Map UUID": data_product_uuid,
         "Tissue": convert_tissue_code(tissue),
         "Assay": "10X Multiome",
+        "Organism": organism,
         "URL": bucket_url + f"{tissue}.h5mu",
         "Creation Time": creation_time,
         "Dataset UUIDs": uuids,
-        "Dataset HBMIDs": hbmids,
+        "Dataset SNTIDs": sntids,
         "Raw Total Cell Count": cell_count,
         "Raw File Size": file_size
     }
@@ -154,11 +156,11 @@ def annotate_mudata(mdata, uuids_df):
     return merged
 
 
-def main(data_directory: Path, uuids_file: Path, tissue: str = None):
+def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     output_file_name = f"{tissue}_raw" if tissue else "multiome"
     uuids_df = pd.read_csv(uuids_file, sep="\t", dtype=str)
     uuids_list = uuids_df["uuid"].to_list()
-    hbmids_list = uuids_df["hubmap_id"].to_list()
+    sntids_list = uuids_df["sennet_id"].to_list()
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
     # Load files
     file_pairs = [find_file_pairs(directory) for directory in directories if len(listdir(directory))>1]
@@ -181,7 +183,7 @@ def main(data_directory: Path, uuids_file: Path, tissue: str = None):
     raw_mdata_concat = concat_mudatas(concatenated_anndata, concat_obs)
     raw_mdata_concat.obs = annotate_mudata(raw_mdata_concat, uuids_df)
     columns_to_keep = [
-        "hubmap_id", "age", "sex", "height", "weight", "bmi", "cause_of_death", "race", "barcode", "dataset", "cell_id", "tissue"
+        "sennet_id", "age", "sex", "height", "weight", "bmi", "cause_of_death", "race", "barcode", "organism", "dataset", "cell_id", "tissue"
     ]
     raw_mdata_concat.obs = raw_mdata_concat.obs[columns_to_keep]
 
@@ -190,7 +192,7 @@ def main(data_directory: Path, uuids_file: Path, tissue: str = None):
     data_product_uuid = str(uuid.uuid4())
     total_cell_count = raw_mdata_concat.obs.shape[0]
     raw_mdata_concat.uns["creation_data_time"] = creation_time
-    raw_mdata_concat.uns["datasets"] = hbmids_list
+    raw_mdata_concat.uns["datasets"] = sntids_list
     raw_mdata_concat.uns["uuid"] = data_product_uuid
     raw_mdata_concat.write(f"{output_file_name}.h5mu")
     print(raw_mdata_concat.obs)
@@ -199,7 +201,7 @@ def main(data_directory: Path, uuids_file: Path, tissue: str = None):
     print(raw_mdata_concat.mod["atac_cell_by_gene"].obs)
     print(raw_mdata_concat.mod["rna"].obs)
     file_size = os.path.getsize(f"{output_file_name}.h5mu")
-    create_json(tissue, data_product_uuid, creation_time, uuids_list, hbmids_list, total_cell_count, file_size)
+    create_json(tissue, data_product_uuid, creation_time, uuids_list, sntids_list, total_cell_count, file_size, organism)
 
 
 if __name__ == "__main__":
@@ -207,6 +209,7 @@ if __name__ == "__main__":
     p.add_argument("data_directory", type=Path)
     p.add_argument("uuids_file", type=Path)
     p.add_argument("tissue", type=str, nargs="?")
+    p.add_argument("organism", type=str, nargs="?")
     p.add_argument("--enable_manhole", action="store_true")
 
     args = p.parse_args()
@@ -216,4 +219,4 @@ if __name__ == "__main__":
 
         manhole.install(activate_on="USR1")
 
-    main(args.data_directory, args.uuids_file, args.tissue)
+    main(args.data_directory, args.uuids_file, args.organism, args.tissue)

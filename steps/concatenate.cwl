@@ -4,7 +4,7 @@ label: Annotates each h5ad file with dataset and tissue type, then concatenates
 
 hints:
   DockerRequirement:
-    dockerPull: hubmap/multi-data-products
+    dockerPull: sennet/multi-data-products
 baseCommand: /opt/concatenate.py
 
 inputs:
@@ -25,6 +25,12 @@ inputs:
         type: string?
         inputBinding:
             position: 2
+
+    organism:
+        label: "human or mouse"
+        type: string
+        inputBinding:
+            position: 3
 
 outputs:
     mudata_raw:

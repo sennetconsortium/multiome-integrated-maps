@@ -19,7 +19,12 @@ inputs:
     tissue:
         label: "Two letter tissue type code"
         type: string?
-      
+
+    organism:
+        label: "organism type, human or mouse, default is human"
+        type: string?
+        default: "human"
+
     access_key_id:
         label: "AWS access key id"
         type: string
@@ -55,6 +60,8 @@ steps:
           source: uuids_file
         - id: tissue
           source: tissue
+        - id: organism
+          source: organism
     
       out:
         - mudata_raw

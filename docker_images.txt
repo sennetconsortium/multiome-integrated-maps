@@ -1,1 +1,1 @@
-hubmap/multi-data-products docker/Dockerfile base_directory_build
+sennet/multi-data-products docker/Dockerfile base_directory_build
