@@ -22,10 +22,10 @@ RUN apt-get update \
  && rm -rf /var/cache/apt/*
 
 ## Python packages
-COPY docker/python/environment.yml /opt/environment.yml
+COPY docker/environment.yml /opt/environment.yml
 RUN conda env create -f /opt/environment.yml
 
-ENV CONDA_ENV_NAME=rna-data-products
+ENV CONDA_ENV_NAME=multi-maps
 ENV CONDA_PREFIX=/opt/conda/envs/${CONDA_ENV_NAME}
 ENV PATH=${CONDA_PREFIX}/bin:$PATH
 

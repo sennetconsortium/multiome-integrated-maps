@@ -1,4 +1,4 @@
-name: rna-data-products
+name: multi-maps
 channels:
   - conda-forge
   - defaults
