@@ -1,0 +1,26 @@
+name: rna-data-products
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.8,<3.10
+  - pip
+  - mudata
+  - anndata==0.9.2
+  - pip:
+      - awswrangler
+      - awscli==1.18.105
+      - botocore==1.17.28
+      - leidenalg
+      - manhole
+      - pandas
+      - numpy<2
+      - pyyaml
+      - requests
+      - scanpy==1.9.6
+      - zarr
+      - muon
+      - tensorflow
+      - tables
+      - git+https://github.com/hubmapconsortium/mofapy2.git
+      - git+https://github.com/hubmapconsortium/fastq-utils@v0.2.3
