@@ -1,1 +1,1 @@
-sennet/multi-data-products docker/Dockerfile base_directory_build
+sennet/multi-maps docker/Dockerfile base_directory_build
