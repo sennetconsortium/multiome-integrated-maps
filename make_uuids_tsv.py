@@ -63,52 +63,55 @@ def process_response(response, organism):
             uuids.append(item.get("uuid"))
             sennet_ids.append(item.get("sennet_id"))
 
-            # Attempt to extract donor metadata
-            metadata = item.get("sources")[0]
-            donor_metadata_list.append(extract_donor_metadata(metadata))
+        # Attempt to extract donor metadata
+            metadata = source.get("metadata")
+            if metadata.get("living_donor_data"):
+                donor_metadata = metadata.get("living_donor_data")
+            else:
+                donor_metadata = metadata.get("organ_donor_data")
+            donor_metadata_list.append(extract_donor_metadata(donor_metadata))
 
-    return uuids, sennet_ids, donor_metadata_list
+    return (
+        uuids,
+        sennet_ids,
+        donor_metadata_list,
+    )
 
-
-def extract_donor_metadata(metadata):
-    donor_info = {
-        "age": None,
-        "sex": None,
-        "height": None,
-        "weight": None,
-        "bmi": None,
-        "cause_of_death": None,
-        "race": None,
-        "social_history": None,
-        "abo_blood_type": None,
-        "mechanism_of_injury": None,
-    }
-
-    donor_metadata = metadata.get("mapped_metadata", {})
-
-    for key in donor_metadata:
-        if key == "abo_blood_group_system":
-            donor_info["abo_blood_type"] = donor_metadata[key].get("value_display")
-        elif key == "age":
-            donor_info["age"] = donor_metadata[key].get("value_display")
-        elif key == "body_mass_index":
-            donor_info["bmi"] = donor_metadata[key].get("value_display")
-        elif key == "cause_of_death":
-            donor_info["cause_of_death"] = donor_metadata[key].get("value_display")
-        elif key == "height":
-            donor_info["height"] = donor_metadata[key].get("value_display")
-        elif key == "mechanism_of_injury":
-            donor_info["mechanism_of_injury"] = donor_metadata[key].get("value_display")
-        elif key == "race":
-            donor_info["race"] = donor_metadata[key].get("value_display")
-        elif key == "sex":
-            donor_info["sex"] = donor_metadata[key].get("value_display")
-        elif key == "social_history":
-            donor_info["social_history"] = donor_metadata[key].get("value_display")
-        elif key == "weight":
-            donor_info["weight"] = donor_metadata[key].get("value_display")
-
-    return donor_info
+def extract_donor_metadata(donor_metadata):
+        donor_info = {
+            "age": None,
+            "sex": None,
+            "height": None,
+            "weight": None,
+            "bmi": None,
+            "cause_of_death": None,
+            "race": None,
+            "medical_history": None,
+            "abo_blood_type": None,
+            "mechanism_of_injury": None,
+        }
+        for item in donor_metadata:
+            if item.get("grouping_concept_preferred_term") == "ABO blood group system":
+                donor_info["abo_blood_type"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Age":
+                donor_info["age"] = item.get("data_value") + " " + item.get("units")
+            elif item.get("grouping_concept_preferred_term") == "Body Mass Index":
+                donor_info["bmi"] = item.get("data_value") + " " + item.get("units")
+            elif item.get("grouping_concept_preferred_term") == "Cause of Death":
+                donor_info["cause_of_death"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Height":
+                donor_info["height"] = item.get("data_value") + " " + item.get("units")
+            elif item.get("grouping_concept_preferred_term") == "Mechanism of Injury":
+                donor_info["mechanism_of_injury"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Race":
+                donor_info["race"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Sex":
+                donor_info["sex"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Medical History":
+                donor_info["medical_history"] = item.get("data_value")
+            elif item.get("grouping_concept_preferred_term") == "Weight":
+                donor_info["weight"] = item.get("data_value") + " " + item.get("units")
+        return donor_info
 
 
 def get_organ_uberon(organ_name):
