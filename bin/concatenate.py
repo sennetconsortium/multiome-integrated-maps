@@ -36,16 +36,20 @@ def convert_tissue_code(tissue_code):
     return tissue_name
 
 
-def find_files(directory, pattern):
+def find_files(directory, patterns):
     for dirpath_str, dirnames, filenames in walk(directory):
         dirpath = Path(dirpath_str)
         for filename in filenames:
             filepath = dirpath / filename
-            if filepath.match(pattern):
-                print(filepath)
-                return filepath
-            else:
-                print(f"{filepath} not found")
+            for pattern in patterns:
+                if filepath.match(pattern):
+                    return filepath
+
+
+def find_file_pairs(directory):
+    unfiltered_patterns = ["mudata_raw.h5mu"]
+    unfiltered_file = find_files(directory, unfiltered_patterns)
+    return unfiltered_file
 
 
 def make_unique_barcodes(mdata_file, tissue_type: str = None):
@@ -158,14 +162,13 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
     print(directories)
     # Load files
-    files = [find_files(directory, "mudata_raw.h5mu") for directory in directories if len(listdir(directory))>1]
-    print(files)
-    print("Annotating objects")
     raw_mdatas = [
-        make_unique_barcodes(file, tissue)
-        for file in files
+        find_file_pairs(directory)
+        for directory in directories
+        if len(listdir(directory)) >= 1
     ]
-
+    print(raw_mdatas)
+    print("Annotating objects")
     print("Concatenating objects")
     modality_keys = ["rna", "atac_cell_by_bin", "atac_cell_by_gene"]
     concatenated_anndata = concatenate_modalities(raw_mdatas, modality_keys)

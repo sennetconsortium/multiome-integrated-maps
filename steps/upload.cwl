@@ -4,7 +4,7 @@ label: Annotates each h5ad file with dataset and tissue type, then concatenates
 
 hints:
   DockerRequirement:
-    dockerPull: sennet/multi-data-products
+    dockerPull: sennet/multi-maps
 baseCommand: /opt/upload.py
 
 inputs:
