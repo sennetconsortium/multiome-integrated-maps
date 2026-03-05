@@ -36,22 +36,13 @@ def convert_tissue_code(tissue_code):
     return tissue_name
 
 
-def find_files(directory, patterns):
+def find_files(directory, pattern):
     for dirpath_str, dirnames, filenames in walk(directory):
         dirpath = Path(dirpath_str)
         for filename in filenames:
             filepath = dirpath / filename
-            for pattern in patterns:
-                if filepath.match(pattern):
-                    return filepath
-                
-
-def find_file_pairs(directory):
-    raw_mdata_patterns = ["mudata_raw.h5mu"]
-    processed_mdata_patterns = ["secondary_analysis.h5mu"]
-    raw_mdata_file = find_files(directory, raw_mdata_patterns)
-    processed_mdata_file = find_files(directory, processed_mdata_patterns)
-    return (raw_mdata_file, processed_mdata_file)
+            if filepath.match(pattern):
+                return filepath
 
 
 def make_unique_barcodes(mdata_file, tissue_type: str = None):
@@ -163,18 +154,12 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     sntids_list = uuids_df["sennet_id"].to_list()
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
     # Load files
-    file_pairs = [find_file_pairs(directory) for directory in directories if len(listdir(directory))>1]
+    files = [find_files(directory, "mudata_raw.h5mu") for directory in directories if len(listdir(directory))>1]
     print("Annotating objects")
     raw_mdatas = [
-        make_unique_barcodes(file_pair[0], tissue)
-        for file_pair in file_pairs
+        make_unique_barcodes(file, tissue)
+        for file in files
     ]
-
-
-    # processed_mdatas = [     
-    #     load_mudata(file_pair[1])
-    #     for file_pair in file_pairs
-    # ]
 
     print("Concatenating objects")
     modality_keys = ["rna", "atac_cell_by_bin", "atac_cell_by_gene"]
@@ -183,7 +168,10 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     raw_mdata_concat = concat_mudatas(concatenated_anndata, concat_obs)
     raw_mdata_concat.obs = annotate_mudata(raw_mdata_concat, uuids_df)
     columns_to_keep = [
-        "sennet_id", "age", "sex", "height", "weight", "bmi", "cause_of_death", "race", "barcode", "organism", "dataset", "cell_id", "tissue"
+        "sennet_id", "age", "sex", "height", "weight",
+        "bmi", "cause_of_death", "medical_history", "mechanism_of_injury",
+        "race", "abo_blood_type", "barcode", "organism",
+        "dataset", "cell_id", "tissue",
     ]
     raw_mdata_concat.obs = raw_mdata_concat.obs[columns_to_keep]
 
