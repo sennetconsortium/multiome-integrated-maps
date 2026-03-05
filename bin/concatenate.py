@@ -43,6 +43,8 @@ def find_files(directory, pattern):
             filepath = dirpath / filename
             if filepath.match(pattern):
                 return filepath
+            else:
+                print(f"{filepath} not found")
 
 
 def make_unique_barcodes(mdata_file, tissue_type: str = None):
@@ -155,6 +157,7 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
     # Load files
     files = [find_files(directory, "mudata_raw.h5mu") for directory in directories if len(listdir(directory))>1]
+    print(files)
     print("Annotating objects")
     raw_mdatas = [
         make_unique_barcodes(file, tissue)
