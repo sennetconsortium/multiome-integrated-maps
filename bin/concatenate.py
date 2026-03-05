@@ -42,6 +42,7 @@ def find_files(directory, pattern):
         for filename in filenames:
             filepath = dirpath / filename
             if filepath.match(pattern):
+                print(filepath)
                 return filepath
             else:
                 print(f"{filepath} not found")
@@ -155,6 +156,7 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     uuids_list = uuids_df["uuid"].to_list()
     sntids_list = uuids_df["sennet_id"].to_list()
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
+    print(directories)
     # Load files
     files = [find_files(directory, "mudata_raw.h5mu") for directory in directories if len(listdir(directory))>1]
     print(files)
