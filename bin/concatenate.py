@@ -146,6 +146,8 @@ def create_json(tissue, data_product_uuid, creation_time, uuids, sntids, cell_co
 
 
 def annotate_mudata(mdata, uuids_df):
+    print(mdata.obs_keys())
+    print(uuids_df.columns)
     merged = uuids_df.merge(mdata.obs, left_on="uuid", right_on="uuid", how="inner")
     merged = merged.set_index(mdata.obs.index)
     merged = merged.drop(columns=["Unnamed: 0"])
