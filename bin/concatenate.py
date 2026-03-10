@@ -163,12 +163,11 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     print(directories)
     # Load files
     raw_mdatas = [
-        find_file_pairs(directory)
+        md.read(find_file_pairs(directory))
         for directory in directories
         if len(listdir(directory)) >= 1
     ]
     print(raw_mdatas)
-    print("Annotating objects")
     print("Concatenating objects")
     modality_keys = ["rna", "atac_cell_by_bin", "atac_cell_by_gene"]
     concatenated_anndata = concatenate_modalities(raw_mdatas, modality_keys)
