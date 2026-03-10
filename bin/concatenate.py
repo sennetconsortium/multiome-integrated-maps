@@ -74,11 +74,8 @@ def make_unique_barcodes(mdata_file, tissue_type: str = None):
     )
     
     # Iterate through each modality in mdata, accessing by key
-    print(list(mdata_copy.mod.keys()))
     for key in mdata_copy.mod.keys():
         mod_data = mdata_copy[key]
-        print(key)
-        print(mod_data.obs_keys())
 
         mod_data.obs["barcode"] = mod_data.obs.index
         if mod_data.obs["barcode"].str.contains("BAM_data#").any():
@@ -91,7 +88,6 @@ def make_unique_barcodes(mdata_file, tissue_type: str = None):
         mod_data.obs.set_index("cell_id", drop=True, inplace=True)
         mod_data.obs["tissue"] = tissue_type
 
-        print(mod_data.obs)
         mdata_copy.mod[key] = mod_data
 
     mdata_copy.obs["tissue"] = tissue_type
@@ -146,9 +142,8 @@ def create_json(tissue, data_product_uuid, creation_time, uuids, sntids, cell_co
 
 
 def annotate_mudata(mdata, uuids_df):
-    print(mdata.obs_keys())
     print(uuids_df.columns)
-    merged = uuids_df.merge(mdata.obs, left_on="uuid", right_on="uuid", how="inner")
+    merged = uuids_df.merge(mdata.obs, left_on="uuid", right_on="dataset", how="inner")
     merged = merged.set_index(mdata.obs.index)
     merged = merged.drop(columns=["Unnamed: 0"])
     merged = merged.fillna(np.nan)
@@ -162,19 +157,21 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     uuids_list = uuids_df["uuid"].to_list()
     sntids_list = uuids_df["sennet_id"].to_list()
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
-    print(directories)
     # Load files
     raw_mdatas = [
         md.read(find_file_pairs(directory))
         for directory in directories
         if len(listdir(directory)) >= 1
     ]
-    print(raw_mdatas)
     print("Concatenating objects")
     modality_keys = ["rna", "atac_cell_by_bin", "atac_cell_by_gene"]
     concatenated_anndata = concatenate_modalities(raw_mdatas, modality_keys)
+    print(concatenated_anndata)
     concat_obs = concatenate_obs(raw_mdatas)
     raw_mdata_concat = concat_mudatas(concatenated_anndata, concat_obs)
+    print(raw_mdata_concat)
+    print(raw_mdata_concat.obs)
+    print(raw_mdata_concat.obs_keys())
     raw_mdata_concat.obs = annotate_mudata(raw_mdata_concat, uuids_df)
     columns_to_keep = [
         "sennet_id", "age", "sex", "height", "weight",
