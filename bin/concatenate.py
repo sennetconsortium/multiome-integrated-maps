@@ -157,12 +157,16 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     uuids_list = uuids_df["uuid"].to_list()
     sntids_list = uuids_df["sennet_id"].to_list()
     directories = [data_directory / Path(uuid) for uuid in uuids_df["uuid"]]
-    # Load files
-    raw_mdatas = [
-        md.read(find_file_pairs(directory))
+    files = [
+        find_file_pairs(directory)
         for directory in directories
         if len(listdir(directory)) >= 1
     ]
+    raw_mdatas = [
+        make_unique_barcodes(file, tissue)
+        for file in files
+    ]
+
     print("Concatenating objects")
     modality_keys = ["rna", "atac_cell_by_bin", "atac_cell_by_gene"]
     concatenated_anndata = concatenate_modalities(raw_mdatas, modality_keys)
