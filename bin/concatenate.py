@@ -147,6 +147,8 @@ def annotate_mudata(mdata, uuids_df):
     merged = merged.set_index(mdata.obs.index)
     merged = merged.drop(columns=["Unnamed: 0"])
     merged = merged.fillna(np.nan)
+    if merged["tissue_y"] in merged.colums:
+        merged["tissue"] = merged["tissue_y"]
     return merged
 
 
@@ -182,7 +184,6 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     print(raw_mdata_concat)
     print(raw_mdata_concat.obs)
     print(raw_mdata_concat.obs_keys())
-
     raw_mdata_concat.obs = raw_mdata_concat.obs[columns_to_keep]
 
 
