@@ -172,9 +172,6 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     print(concatenated_anndata)
     concat_obs = concatenate_obs(raw_mdatas)
     raw_mdata_concat = concat_mudatas(concatenated_anndata, concat_obs)
-    print(raw_mdata_concat)
-    print(raw_mdata_concat.obs)
-    print(raw_mdata_concat.obs_keys())
     raw_mdata_concat.obs = annotate_mudata(raw_mdata_concat, uuids_df)
     columns_to_keep = [
         "sennet_id", "age", "sex", "height", "weight",
@@ -182,6 +179,10 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
         "race", "abo_blood_type", "barcode", "organism",
         "dataset", "cell_id", "tissue",
     ]
+    print(raw_mdata_concat)
+    print(raw_mdata_concat.obs)
+    print(raw_mdata_concat.obs_keys())
+
     raw_mdata_concat.obs = raw_mdata_concat.obs[columns_to_keep]
 
 
