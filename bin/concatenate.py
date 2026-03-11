@@ -147,7 +147,7 @@ def annotate_mudata(mdata, uuids_df):
     merged = merged.set_index(mdata.obs.index)
     merged = merged.drop(columns=["Unnamed: 0"])
     merged = merged.fillna(np.nan)
-    if merged["tissue_y"] in merged.colums:
+    if merged["tissue_y"] in merged.columns:
         merged["tissue"] = merged["tissue_y"]
     return merged
 
