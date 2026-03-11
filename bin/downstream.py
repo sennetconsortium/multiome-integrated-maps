@@ -151,6 +151,7 @@ def main(mudata_raw: Path, tissue: str, metadata: Path):
     ]
     mdata_raw_copy.obs = mdata_raw_copy.obs[columns_to_keep]
     mdata_raw_copy.obs["cell_id"] = mdata_raw_copy.obs["cell_id"].astype(str)
+    mdata_raw_copy.var["highly_variable"] = mdata_raw_copy.var["highly_variable"].fillna(False)
     mdata_raw_copy.var["highly_variable"] = mdata_raw_copy.var["highly_variable"].astype(bool)
     print(mdata_raw_copy)
     print(mdata_raw_copy.obs_keys())
