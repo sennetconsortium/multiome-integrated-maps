@@ -25,7 +25,7 @@ def upload_files_to_s3(file_list, uuid):
 def get_uuid(metadata_json):
     with open(metadata_json) as json_file:
         metadata = json.load(json_file)
-    uuid = metadata["Data Product UUID"]
+    uuid = metadata["Integrated Map UUID"]
     return uuid
 
 
