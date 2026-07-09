@@ -29,6 +29,8 @@ ENV CONDA_ENV_NAME=multi-maps
 ENV CONDA_PREFIX=/opt/conda/envs/${CONDA_ENV_NAME}
 ENV PATH=${CONDA_PREFIX}/bin:$PATH
 
+RUN pip3 install git+https://github.com/satijalab/panhumanpy.git@d4c69410e7dc23213b7a848c8c1d8274e333272a
+RUN curl -L -o /opt/pan-human-azimuth-crosswalk.csv https://cdn.humanatlas.io/digital-objects/ctann/pan-human-azimuth/v1.0/assets/pan-human-azimuth-crosswalk.csv
 
 COPY bin/ /opt
 COPY data /opt/data

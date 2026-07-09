@@ -88,6 +88,19 @@ steps:
         - final_metadata_json
       run: steps/downstream.cwl
 
+    - id: azimuth-annotate
+      in:
+        - id: muon_processed
+          source: downstream/muon_processed
+        - id: tissue
+          source: tissue
+        - id: metadata_json
+          source: downstream/final_metadata_json
+      out:
+        - annotated_mudata
+        - metadata_with_cell_types
+      run: steps/azimuth-annotate.cwl
+      label: "Adds azimuth annotations"
 
     - id: upload
       in: 

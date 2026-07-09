@@ -9,6 +9,7 @@ import numpy as np
 import os
 import scanpy as sc
 from muon import prot as pt
+from scipy import sparse
 
 from plot_utils import new_plot
 
@@ -153,9 +154,8 @@ def main(mudata_raw: Path, tissue: str, metadata: Path):
     mdata_raw_copy.obs["cell_id"] = mdata_raw_copy.obs["cell_id"].astype(str)
     mdata_raw_copy.var["highly_variable"] = mdata_raw_copy.var["highly_variable"].fillna(False)
     mdata_raw_copy.var["highly_variable"] = mdata_raw_copy.var["highly_variable"].astype(bool)
-    print(mdata_raw_copy)
-    print(mdata_raw_copy.obs_keys())
-    print(mdata_raw.var["highly_variable"])
+    mdata_raw_copy.mod['atac_cbg'].layers['smoothed'] = sparse.csr_matrix(
+        mdata_raw_copy.mod['atac_cbg'].layers['smoothed'])
     for key in original_uns:
         mdata_raw_copy.uns[key] = original_uns[key]
 

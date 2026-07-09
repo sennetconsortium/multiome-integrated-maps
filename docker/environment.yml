@@ -20,6 +20,7 @@ dependencies:
       - pyyaml
       - requests
       - scanpy==1.9.6
+      - squidpy
       - zarr
       - muon
       - tensorflow
