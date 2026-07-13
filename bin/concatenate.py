@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import anndata
+import lzma
 import mudata as md
 import muon as mu
 import numpy as np
@@ -17,6 +18,11 @@ import pandas as pd
 import requests
 import uuid
 import yaml
+
+GENE_MAPPING_DIRECTORIES = [
+    Path(__file__).parent.parent / "data",
+    Path("/opt/data"),
+]
 
 
 # !!TODO!! change to sennet
@@ -152,6 +158,32 @@ def annotate_mudata(mdata, uuids_df):
     return merged
 
 
+def read_gene_mapping() -> Dict[str, str]:
+    """
+    Try to find the Ensembl to HUGO symbol mapping, with paths suitable
+    for running this script inside and outside a Docker container.
+    """
+    for directory in GENE_MAPPING_DIRECTORIES:
+        mapping_file = directory / "ensembl_hugo_mapping.json.xz"
+        if mapping_file.is_file():
+            with lzma.open(mapping_file) as f:
+                json_bytes = f.read()
+                stri = json_bytes.decode("utf-8")
+                data = json.loads(stri)
+                return data
+    message_pieces = ["Couldn't find Ensembl → HUGO mapping file. Tried:"]
+    message_pieces.extend(f"\t{path}" for path in GENE_MAPPING_DIRECTORIES)
+    raise ValueError("\n".join(message_pieces))
+
+
+def map_gene_ids(var):
+    gene_mapping = read_gene_mapping()
+    var["hugo_symbol"] = [
+        gene_mapping.get(var, np.nan) for var in var.index
+    ]
+    return var
+
+
 def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     output_file_name = f"{tissue}_raw" if tissue else "multiome"
     uuids_df = pd.read_csv(uuids_file, sep="\t", dtype=str)
@@ -185,7 +217,7 @@ def main(data_directory: Path, uuids_file: Path, organism, tissue: str = None):
     print(raw_mdata_concat.obs)
     print(raw_mdata_concat.obs_keys())
     raw_mdata_concat.obs = raw_mdata_concat.obs[columns_to_keep]
-
+    raw_mdata_concat.mod['rna'].var = map_gene_ids(raw_mdata_concat.mod['rna'].var)
 
     creation_time = str(datetime.now())
     data_product_uuid = str(uuid.uuid4())
